@@ -4,9 +4,10 @@ A kafka producer that fetches 5 minutes worth sensor measurements (or data
 related to another end point) and puts it in kafka
 """
 
+import json
+import argparse
 from api_client import APIClient
 from kafka import KafkaProducer
-import json
 
 # Number of records in one page of a multi-page api call,
 PAGE_SIZE = 200
@@ -93,6 +94,27 @@ class Producer():
 
 
 if __name__ == "__main__":
-    producer = Producer('observations', 'chicago', 'observations', 300,
-                        DEFAULT_PRODUCER_CONFIG)
+    # Command line arguments
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-t", "--topic", help="A Kafka topic")
+    parser.add_argument("-p",
+                        "--proj",
+                        help="Array of Things project (e.g. chicago)")
+    parser.add_argument("-e",
+                        "--endpoint",
+                        help="API endpoint in Array of Things")
+    parser.add_argument(
+        "-s",
+        "--pagesize",
+        default=300,
+        help="Number of records in a single page of paginated response")
+    parser.add_argument("-c",
+                        "--conf",
+                        default=DEFAULT_PRODUCER_CONFIG,
+                        help="Kafka producer configuration in JSON format")
+
+    args = parser.parse_args()
+    producer = Producer(args.topic, args.proj, args.endpoint, args.pagesize,
+                        args.conf)
     producer.publish_records()
