@@ -5,6 +5,7 @@ Utility functions for APIClient and Producer classes
 
 from datetime import datetime
 import json
+import itertools
 
 
 def write_json(start_time, json_obj, page):
@@ -37,3 +38,10 @@ def is_valid(response):
     if response.status_code == 200 and len(response.json()["data"]) != 0:
         valid = True
     return valid
+
+
+def flatten_reverse(nested_record):
+    """
+    Flatten and reverse a nested list.
+    """
+    return list(itertools.chain.from_iterable(nested_record))[::-1]

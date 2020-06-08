@@ -94,7 +94,7 @@ class Producer():
             keys = set(map(lambda d: d['sensor_path'], records))
             for key in keys:
                 sensor_specific_records = list(
-                    filter(lambda d: d['sensor_path'] == key, responses))
+                    filter(lambda d: d['sensor_path'] == key, records))
                 self.publish(key, sensor_specific_records)
 
 
