@@ -1,26 +1,27 @@
 """
 --api_client.py--
-Module for making api requests and placing them in 
-a Kafka broker
-
+Module for making api requests to https://api-of-things.plenar.io/api/
 """
-import time
+
 import requests
 import json
-import subprocess
+from utils import write_json, to_timestamp, is_valid
 
 BASE_URL = "https://api-of-things.plenar.io/api/"
 
+
 class APIClient():
-    def __init__(self, project, endpoint):
+    def __init__(self, project, endpoint, interval):
         """Class for fetching sensor and measurement data 
         from API servers at Array of Things.
         :param endpoint: Could be 'observations' or 'sensors'
         """
-        self.endpoint = endpoint
         self.project = project
-        self.url = BASE_URL + endpoint 
-    
+        self.endpoint = endpoint
+        self.url = BASE_URL + endpoint
+        self.interval = interval
+        self.start_time = None
+
     def fetch(self, size=300, page=1):
         """Fetch a 'page' with 'size' records in it where all 
         records should be newer than 'start_time'
@@ -39,29 +40,54 @@ class APIClient():
         :param page: page to be fetched  
         """
         filter_str = "?project={}&order=desc%3Atimestamp&size={}&page={}".format(
-            self.project, 
-            size, 
-            page
-        )
+            self.project, size, page)
         return filter_str
 
-    @staticmethod
-    def is_valid(response):
+    def fetch_records(self, size, write_to_file=False):
         """
-        Validate an http request response. Checks the status code 
-        and the length of the 'data' field to determine validity.
-        :param response: a response object to be validated
+        Fetches sensor measurements for 'self.interval' time units.
+        :param size: number of records to be fetched in one page
         """
-        valid = False
-        if response.status_code == 200 and len(response.json()["data"]) != 0:
-            valid = True
-        return valid
+        page = 1
+        responses = []
+        response = self.fetch(size, page)
+        if is_valid(response):
+            self.start_time = response.json()["data"][0]["timestamp"]
+            self.start_time = to_timestamp(self.start_time,
+                                           "%Y-%m-%dT%H:%M:%S")
 
-        
+        while is_valid(response) and self.is_in_interval(response):
+            responses.append(response.json()["data"])
+            if write_to_file:
+                write_json(response.json(), page)
+            page += 1
+            response = self.fetch(size, page)
+
+        return responses
+
+    def is_in_interval(self, response):
+        """
+        Checks if the first record in responses.json()
+        """
+        if self.start_time is None:
+            raise TypeError("start_time cannot be of None type")
+
+        in_interval = False
+
+        latest_record_time = response.json()["data"][0]["timestamp"]
+        latest_record_time = to_timestamp(latest_record_time,
+                                          "%Y-%m-%dT%H:%M:%S")
+
+        if self.start_time - latest_record_time < self.interval:
+            in_interval = True
+
+        return in_interval
+
+
 if __name__ == "__main__":
-    api = APIClient("chicago", "observations")
-    start_time = int(time.time() - 300)
-    page = 1
+    # Check module by fetching the latest 5 minutes long
+    # sensor 'obervations' for the 'chicago' project
+    api = APIClient("chicago", "observations", 300)
 
-    response = api.fetch(5, page)
-    print(response.json())
+    responses = api.fetch_records(200)
+    print(responses)
