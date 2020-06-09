@@ -5,7 +5,7 @@ Module for making api requests to https://api-of-things.plenar.io/api/
 
 import requests
 import json
-from utils import write_json, to_timestamp, is_valid
+from utils import write_json, to_timestamp, is_valid, flatten_reverse
 
 BASE_URL = "https://api-of-things.plenar.io/api/"
 
@@ -39,8 +39,11 @@ class APIClient():
         :param size: number of records per page
         :param page: page to be fetched  
         """
-        filter_str = "?project={}&order=desc%3Atimestamp&size={}&page={}".format(
-            self.project, size, page)
+        if self.endpoint == "observations":
+            filter_str = "?project={}&order=desc%3Atimestamp&size={}&page={}".format(
+                self.project, size, page)
+        else:
+            filter_str = "?size={}&page={}".format(size, page)
         return filter_str
 
     def fetch_records(self, size, write_to_file=False):
@@ -59,11 +62,11 @@ class APIClient():
         while is_valid(response) and self.is_in_interval(response):
             responses.append(response.json()["data"])
             if write_to_file:
-                write_json(response.json(), page)
+                write_json(self.start_time, response.json(), page)
             page += 1
             response = self.fetch(size, page)
 
-        return responses
+        return flatten_reverse(responses)
 
     def is_in_interval(self, response):
         """

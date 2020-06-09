@@ -69,12 +69,14 @@ class Producer():
             print("Exception encountered while trying to connect to Kafka")
             print(str(ex))
 
-    def publish(self, record):
+    def publish(self, key, records):
         """
         Publish messages to a kafka topic
         """
         try:
-            self.producer.send(self.topic, value=record)
+            self.producer.send(self.topic,
+                               key=bytes(key, encoding='utf-8'),
+                               value=records)
             self.producer.flush()
         except Exception as ex:
             print("Exception encountered while publishing message")
@@ -89,8 +91,11 @@ class Producer():
         self.connect_kafka()
 
         if (records is not None) and (self.producer is not None):
-            for record in records:
-                self.publish(record)
+            keys = set(map(lambda d: d['sensor_path'], records))
+            for key in keys:
+                sensor_specific_records = list(
+                    filter(lambda d: d['sensor_path'] == key, records))
+                self.publish(key, sensor_specific_records)
 
 
 if __name__ == "__main__":
