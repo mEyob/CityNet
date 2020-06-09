@@ -9,9 +9,14 @@ import argparse
 from api_client import APIClient
 from kafka import KafkaProducer
 
-# Number of records in one page of a multi-page api call,
-PAGE_SIZE = 200
+# Default time interval (frequency) of data collection
+# Set to every 5 min
+DEFAULT_INTERVAL = 300
 
+# Number of records in one page of a multi-page api call,
+DEFAULT_PAGE_SIZE = 200
+
+# Default kafka producer config
 DEFAULT_PRODUCER_CONFIG = {
     "bootstrap_servers": ['10.0.1.16:9092'],
     "value_serializer": lambda val: json.dumps(val).encode('utf-8')
@@ -24,8 +29,8 @@ class Producer():
                  project,
                  endpoint,
                  interval,
-                 config,
-                 page_size=PAGE_SIZE):
+                 page_size=DEFAULT_PAGE_SIZE,
+                 config=DEFAULT_PRODUCER_CONFIG):
         """
         A wrapper class to a Kafka producer. 
         Creates an API client for a specific project and endpoint
@@ -42,8 +47,8 @@ class Producer():
         """
         self.topic = topic
         self.api = APIClient(project, endpoint, interval)
-        self.config = config
         self.page_size = page_size
+        self.config = config
 
         self.producer = None
 
@@ -69,14 +74,17 @@ class Producer():
             print("Exception encountered while trying to connect to Kafka")
             print(str(ex))
 
-    def publish(self, key, records):
+    def publish(self, records, key=None):
         """
         Publish messages to a kafka topic
         """
         try:
-            self.producer.send(self.topic,
-                               key=bytes(key, encoding='utf-8'),
-                               value=records)
+            if key:
+                self.producer.send(self.topic,
+                                   key=bytes(key, encoding='utf-8'),
+                                   value=records)
+            else:
+                self.producer.send(self.topic, value=records)
             self.producer.flush()
         except Exception as ex:
             print("Exception encountered while publishing message")
@@ -91,11 +99,14 @@ class Producer():
         self.connect_kafka()
 
         if (records is not None) and (self.producer is not None):
-            keys = set(map(lambda d: d['sensor_path'], records))
-            for key in keys:
-                sensor_specific_records = list(
-                    filter(lambda d: d['sensor_path'] == key, records))
-                self.publish(key, sensor_specific_records)
+            if self.topic == "observations":
+                keys = set(map(lambda d: d['sensor_path'], records))
+                for key in keys:
+                    sensor_specific_records = list(
+                        filter(lambda d: d['sensor_path'] == key, records))
+                    self.publish(sensor_specific_records, key)
+            else:
+                self.publish(records)
 
 
 if __name__ == "__main__":
@@ -105,14 +116,19 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--topic", help="A Kafka topic")
     parser.add_argument("-p",
                         "--proj",
+                        default="chicago",
                         help="Array of Things project (e.g. chicago)")
     parser.add_argument("-e",
                         "--endpoint",
                         help="API endpoint in Array of Things")
+    parser.add_argument("-i",
+                        "--interval",
+                        default=DEFAULT_INTERVAL,
+                        help="Time interval of interest")
     parser.add_argument(
         "-s",
         "--pagesize",
-        default=300,
+        default=DEFAULT_PAGE_SIZE,
         help="Number of records in a single page of paginated response")
     parser.add_argument("-c",
                         "--conf",
@@ -120,6 +136,6 @@ if __name__ == "__main__":
                         help="Kafka producer configuration in JSON format")
 
     args = parser.parse_args()
-    producer = Producer(args.topic, args.proj, args.endpoint, args.pagesize,
-                        args.conf)
+    producer = Producer(args.topic, args.proj, args.endpoint, args.interval,
+                        args.pagesize, args.conf)
     producer.publish_records()
