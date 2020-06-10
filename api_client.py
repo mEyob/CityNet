@@ -54,17 +54,23 @@ class APIClient():
         page = 1
         responses = []
         response = self.fetch(size, page)
-        if is_valid(response):
-            self.start_time = response.json()["data"][0]["timestamp"]
-            self.start_time = to_timestamp(self.start_time,
-                                           "%Y-%m-%dT%H:%M:%S")
 
-        while is_valid(response) and self.is_in_interval(response):
-            responses.append(response.json()["data"])
-            if write_to_file:
-                write_json(self.start_time, response.json(), page)
-            page += 1
-            response = self.fetch(size, page)
+        if self.endpoint == "observations":
+            if is_valid(response):
+                self.start_time = response.json()["data"][0]["timestamp"]
+                self.start_time = to_timestamp(self.start_time,
+                                               "%Y-%m-%dT%H:%M:%S")
+            while is_valid(response) and self.is_in_interval(response):
+                responses.append(response.json()["data"])
+                if write_to_file:
+                    write_json(self.start_time, response.json(), page)
+                page += 1
+                response = self.fetch(size, page)
+        else:
+            while is_valid(response):
+                responses.append(response.json()["data"])
+                page += 1
+                response = self.fetch(size, page)
 
         return flatten_reverse(responses)
 
