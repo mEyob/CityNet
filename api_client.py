@@ -6,6 +6,7 @@ Module for making api requests to https://api-of-things.plenar.io/api/
 import requests
 import json
 from utils import write_json, to_timestamp, is_valid, flatten_reverse
+from nodes import create_node_filter
 
 BASE_URL = "https://api-of-things.plenar.io/api/"
 
@@ -40,8 +41,8 @@ class APIClient():
         :param page: page to be fetched  
         """
         if self.endpoint == "observations":
-            filter_str = "?project={}&order=desc%3Atimestamp&size={}&page={}".format(
-                self.project, size, page)
+            filter_str = "?project={}{}order=desc%3Atimestamp&size={}&page={}".format(
+                self.project, create_node_filter(), size, page)
         else:
             filter_str = "?size={}&page={}".format(size, page)
         return filter_str
