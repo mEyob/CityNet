@@ -140,3 +140,6 @@ cython_debug/
 
 # IDE
 .vscode/
+
+# Environment variables and cron job
+consumer_cron.sh
