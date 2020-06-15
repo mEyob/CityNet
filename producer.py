@@ -7,6 +7,7 @@ related to another end point) and puts it in kafka
 import json
 import argparse
 from api_client import APIClient
+from simulator import simulate
 from kafka import KafkaProducer
 
 # Default time interval (frequency) of data collection
@@ -15,6 +16,9 @@ DEFAULT_INTERVAL = 300
 
 # Number of records in one page of a multi-page api call,
 DEFAULT_PAGE_SIZE = 200
+
+# Number of datapoints to be generaged When sensor readings are simulated
+SIMULATED_BATCH_SIZE = 1000
 
 # Default kafka producer config
 DEFAULT_PRODUCER_CONFIG = {
@@ -52,16 +56,20 @@ class Producer():
 
         self.producer = None
 
-    def fetch_data(self):
+    def fetch_data(self, simulated, batch_size):
         """
         Fetch sensor data in json format using an API client
         """
         records = None
-        try:
-            records = self.api.fetch_records(self.page_size)
-        except Exception as ex:
-            print("Exception encountered while trying to fetch records")
-            print(str(ex))
+
+        if simulated:
+            records = simulate(batch_size)
+        else:
+            try:
+                records = self.api.fetch_records(self.page_size)
+            except Exception as ex:
+                print("Exception encountered while trying to fetch records")
+                print(str(ex))
         return records
 
     def connect_kafka(self):
@@ -90,12 +98,12 @@ class Producer():
             print("Exception encountered while publishing message")
             print(str(ex))
 
-    def publish_records(self):
+    def publish_records(self, simulated, batch_size):
         """
         Make a kafka connection as a producer and publish a list 
         of records. Each record is a json formatted sensor data.
         """
-        records = self.fetch_data()
+        records = self.fetch_data(simulated, batch_size)
         self.connect_kafka()
 
         if (records is not None) and (self.producer is not None):
@@ -121,6 +129,14 @@ if __name__ == "__main__":
     parser.add_argument("-e",
                         "--endpoint",
                         help="API endpoint in Array of Things")
+    parser.add_argument("-m",
+                        "--sim",
+                        help="Simulate datapoints",
+                        action='store_true')
+    parser.add_argument("-b",
+                        "--batch",
+                        help="Number of datapoints to be simulated in a batch",
+                        default=SIMULATED_BATCH_SIZE)
     parser.add_argument("-i",
                         "--interval",
                         default=DEFAULT_INTERVAL,
@@ -138,4 +154,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     producer = Producer(args.topic, args.proj, args.endpoint, args.interval,
                         args.pagesize, args.conf)
-    producer.publish_records()
+    producer.publish_records(args.sim, args.batch)
