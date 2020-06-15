@@ -52,12 +52,23 @@ class Consumer():
         Iteratively write kafka messages into DB.
         :param db_pagesize: Max number of records in a batch insertion
         """
+        messages = []
         try:
             for message in self._consumer:
-                preprocessed = self.preprocess(message.value)
+                messages.extend(message.value)
+                if len(messages) >= db_pagesize:
+                    preprocessed = self.preprocess(messages)
+                    if preprocessed:
+                        insert_in_db(self.topic, preprocessed, len(messages),
+                                     db_pagesize)
+                    messages = []
+        except StopIteration:
+            if len(messages) > 0:
+                preprocessed = self.preprocess(messages)
                 if preprocessed:
-                    insert_in_db(self.topic, preprocessed, len(message.value),
+                    insert_in_db(self.topic, preprocessed, len(messages),
                                  db_pagesize)
+
         except Exception as ex:
             print("Exception encountered while trying to read messages")
             print(str(ex))
@@ -75,24 +86,23 @@ class Consumer():
 
         processed = None
 
-        try:
-            if self.topic == "sensors":
-                processed = ((row["path"], row["uom"], cast(int, row["min"]),
-                              cast(int, row["max"]), row["data_sheet"])
-                             for row in data)
-            elif self.topic == "observations":
-                none_val_removed = filter(
-                    lambda row: (row["timestamp"] is not None) and
-                    (cast(float, row["value"])), data)
-                processed = ((row["sensor_path"], row["timestamp"],
-                              cast(float, row["value"]), row["node_vsn"])
-                             for row in none_val_removed)
-            elif self.topic == "nodes":
-                processed = ((row["vsn"], *lat_long(
-                    row["location"]["geometry"]["coordinates"]))
-                             for row in data if row["address"] != "TBD")
-        except Exception as ex:
-            print(str(ex))
+        if self.topic == "sensors":
+            processed = ((row["path"], row["uom"], cast(int, row["min"]),
+                          cast(int, row["max"]), row["data_sheet"])
+                         for row in data)
+        elif self.topic == "observations":
+            none_val_removed = filter(
+                lambda row:
+                (row["timestamp"] is not None) and (cast(float, row["value"])),
+                data)
+            processed = ((row["sensor_path"], row["timestamp"],
+                          cast(float, row["value"]), row["node_vsn"])
+                         for row in none_val_removed)
+        elif self.topic == "nodes":
+            processed = ((row["vsn"], *lat_long(
+                row["location"]["geometry"]["coordinates"])) for row in data
+                         if row["address"] != "TBD")
+
         return processed
 
 
