@@ -22,8 +22,12 @@ def simulate(batch_num):
     hour = time.hour
 
     for sensor_idx in range(1, batch_num + 1):
+        if sensor_idx <= 1000:
+            sensor_number = sensor_idx
+        else:
+            sensor_number = (sensor_idx % 1000) + 1
         row = {
-            "sensor_path": "fake.temperature.sensor{}".format(sensor_idx),
+            "sensor_path": "fake.temperature.sensor{}".format(sensor_number),
             "timestamp": time_str,
             "value": random_periodic(hour),
             "node_vsn": "fake-0C0"
