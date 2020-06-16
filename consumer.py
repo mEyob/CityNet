@@ -60,15 +60,13 @@ class Consumer():
                 if len(messages) >= db_pagesize:
                     preprocessed = self.preprocess(messages)
                     if preprocessed:
-                        insert_in_db(self.topic, preprocessed, len(messages),
-                                     db_pagesize)
+                        insert_in_db(self.topic, preprocessed, db_pagesize)
                     messages = []
         except StopIteration:
             if len(messages) > 0:
                 preprocessed = self.preprocess(messages)
                 if preprocessed:
-                    insert_in_db(self.topic, preprocessed, len(messages),
-                                 db_pagesize)
+                    insert_in_db(self.topic, preprocessed, db_pagesize)
 
         except Exception as ex:
             print("Exception encountered while trying to read messages")
