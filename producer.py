@@ -6,6 +6,7 @@ related to another end point) and puts it in kafka
 
 import json
 import argparse
+import time
 from api_client import APIClient
 from simulator import simulate
 from kafka import KafkaProducer
@@ -86,17 +87,17 @@ class Producer():
         """
         Publish messages to a kafka topic
         """
-        try:
-            if key:
-                self.producer.send(self.topic,
-                                   key=bytes(key, encoding='utf-8'),
-                                   value=records)
-            else:
-                self.producer.send(self.topic, value=records)
-            self.producer.flush()
-        except Exception as ex:
-            print("Exception encountered while publishing message")
-            print(str(ex))
+        start = time.perf_counter()
+        if key:
+            self.producer.send(self.topic,
+                               key=bytes(key, encoding='utf-8'),
+                               value=records)
+        else:
+            self.producer.send(self.topic, value=records)
+        self.producer.flush()
+        end = time.perf_counter()
+        with open("logs/producer.log", "a") as log:
+            log.write("{},{}\n".format(len(records), end - start))
 
     def publish_records(self, simulated, batch_size):
         """
