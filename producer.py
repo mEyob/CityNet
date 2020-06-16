@@ -103,18 +103,19 @@ class Producer():
         Make a kafka connection as a producer and publish a list 
         of records. Each record is a json formatted sensor data.
         """
-        records = self.fetch_data(simulated, batch_size)
-        self.connect_kafka()
+        while True:
+            records = self.fetch_data(simulated, batch_size)
+            self.connect_kafka()
 
-        if (records is not None) and (self.producer is not None):
-            if self.topic == "observations":
-                keys = set(map(lambda d: d['sensor_path'], records))
-                for key in keys:
-                    sensor_specific_records = list(
-                        filter(lambda d: d['sensor_path'] == key, records))
-                    self.publish(sensor_specific_records, key)
-            else:
-                self.publish(records)
+            if (records is not None) and (self.producer is not None):
+                if self.topic == "observations":
+                    keys = set(map(lambda d: d['sensor_path'], records))
+                    for key in keys:
+                        sensor_specific_records = list(
+                            filter(lambda d: d['sensor_path'] == key, records))
+                        self.publish(sensor_specific_records, key)
+                else:
+                    self.publish(records)
 
 
 if __name__ == "__main__":
