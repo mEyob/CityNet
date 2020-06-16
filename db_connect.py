@@ -11,8 +11,13 @@ import json
 
 CONNECTION = json.loads(os.environ["CONNECTION"])
 
+if CONNECTION["host"][-3:] == "187":
+    db_type = "TSDB"
+else:
+    db_type = "PGDB"
 
-def insert_in_db(table_name, records, num_of_records, page_size=100):
+
+def insert_in_db(table_name, records, page_size=100):
     '''
     A function for writing rows into database.
     :param table_statement: the `INSERT INTO` statement to be executed
@@ -43,11 +48,35 @@ def insert_in_db(table_name, records, num_of_records, page_size=100):
                            page_size=page_size)
             con.commit()
             end = time.perf_counter()
-            print("{}: Inserted {} rows in {} seconds".format(
-                int(time.time()), num_of_records, end - start))
+            write(len(records), end - start)
         except psycopg2.DatabaseError as ex:
             con.rollback()
             print("Exception encountered: Psycopg2")
             print(str(ex))
         finally:
             con.close()
+
+
+def write(rows, seconds):
+    """
+    Write performance metrics to file.
+    """
+    filepath = "logs/{}.log".format(db_type)
+    with open(filepath, 'a') as fhandle:
+        if os.path.exists(filepath):
+            fhandle.write(",{},{}\n".format(rows, seconds))
+        else:
+            total_rows = get_total_rows()
+            fhandle.write("totalNumOfRows,rowsInserted,timeInSec\n")
+            fhandle.write("{},{},{}\n".format(total_rows, rows, seconds))
+
+
+def get_total_rows():
+    """
+    Get the total number of rows in the aot.observations table
+    """
+    with psycopg2.connect(**CONNECTION) as conn:
+        cur = con.cursor()
+        cur.execute("SELECT COUNT(*) FROM aot.observations")
+        total_rows = cur.fetchall()[0][0]
+    return total_rows
