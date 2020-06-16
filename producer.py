@@ -108,7 +108,7 @@ class Producer():
             self.connect_kafka()
 
             if (records is not None) and (self.producer is not None):
-                if self.topic == "observations":
+                if self.topic == "observations" and not simulated:
                     keys = set(map(lambda d: d['sensor_path'], records))
                     for key in keys:
                         sensor_specific_records = list(
