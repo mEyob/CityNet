@@ -94,9 +94,9 @@ class Consumer():
                 lambda row:
                 (row["timestamp"] is not None) and (cast(float, row["value"])),
                 data)
-            processed = ((row["sensor_path"], row["timestamp"],
+            processed = [(row["sensor_path"], row["timestamp"],
                           cast(float, row["value"]), row["node_vsn"])
-                         for row in none_val_removed)
+                         for row in none_val_removed]
         elif self.topic == "nodes":
             processed = ((row["vsn"], *lat_long(
                 row["location"]["geometry"]["coordinates"])) for row in data
