@@ -21,9 +21,9 @@ def simulate(batch_num):
     time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
     hour = time.hour
 
-    for row in range(1, batch_num + 1):
+    for sensor_idx in range(1, batch_num + 1):
         row = {
-            "sensor_path": "fake.temperature.sensor{}".format(row),
+            "sensor_path": "fake.temperature.sensor{}".format(sensor_idx),
             "timestamp": time_str,
             "value": random_periodic(hour),
             "node_vsn": "fake-0C0"
