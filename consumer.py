@@ -38,10 +38,11 @@ class Consumer():
         Make a Kafka connection as a consumer.
         """
         try:
+            # set consumer_timeout_m to make the message iterator stops
+            # after some period of inactivity
             self._consumer = KafkaConsumer(self.topic,
                                            group_id=self.group_id,
                                            auto_offset_reset='earliest',
-                                           consumer_timeout_ms=10000,
                                            **self.config)
         except Exception as ex:
             print("Exception encountered while trying to connect to Kafka")
