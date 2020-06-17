@@ -62,8 +62,10 @@ def write(rows, seconds):
     Write performance metrics to file.
     """
     filepath = "logs/{}.log".format(db_type)
+    exists = True if os.path.exists(filepath) else False
+
     with open(filepath, 'a') as fhandle:
-        if os.path.exists(filepath):
+        if exists:
             fhandle.write(",{},{}\n".format(rows, seconds))
         else:
             total_rows = get_total_rows()
@@ -76,7 +78,7 @@ def get_total_rows():
     Get the total number of rows in the aot.observations table
     """
     with psycopg2.connect(**CONNECTION) as conn:
-        cur = con.cursor()
+        cur = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM aot.observations")
         total_rows = cur.fetchall()[0][0]
     return total_rows
