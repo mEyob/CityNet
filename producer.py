@@ -117,6 +117,7 @@ class Producer():
                         self.publish(sensor_specific_records, key)
                 else:
                     self.publish(records)
+            time.sleep(1)
 
 
 if __name__ == "__main__":
@@ -138,7 +139,8 @@ if __name__ == "__main__":
     parser.add_argument("-b",
                         "--batch",
                         help="Number of datapoints to be simulated in a batch",
-                        default=SIMULATED_BATCH_SIZE)
+                        default=SIMULATED_BATCH_SIZE,
+                        type=int)
     parser.add_argument("-i",
                         "--interval",
                         default=DEFAULT_INTERVAL,
