@@ -117,7 +117,7 @@ class Producer():
                         self.publish(sensor_specific_records, key)
                 else:
                     self.publish(records)
-            time.sleep(1)
+            time.sleep(295)
 
 
 if __name__ == "__main__":
