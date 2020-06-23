@@ -6,22 +6,19 @@ database connector.
 """
 from kafka import KafkaConsumer
 from db_connect import insert_in_db
+from constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_DB_PAGE_SIZE
 import argparse
 import json
 import time
 import os
 
-DEFAULT_CONSUMER_CONFIG = {
-    "bootstrap_servers": ['10.0.1.16:9092'],
-    "value_deserializer": lambda val: json.loads(val.decode('utf-8'))
-}
-
-# Max number of records in a batch insertion
-DEFAULT_DB_PAGE_SIZE = 100
-
 
 class Consumer():
-    def __init__(self, topic, group_id, config):
+    def __init__(self,
+                 topic,
+                 group_id,
+                 auto_offset_reset='latest',
+                 config=DEFAULT_CONSUMER_CONFIG):
         """
         A Kafka consumer.
         :param topic: a topic the consumer subscribes to
@@ -31,9 +28,9 @@ class Consumer():
         self.topic = topic
         self.group_id = group_id
         self.config = config
-        self.connect_kafka()
+        self.connect_kafka(auto_offset_reset)
 
-    def connect_kafka(self):
+    def connect_kafka(self, auto_offset_reset):
         """
         Make a Kafka connection as a consumer.
         """
@@ -42,7 +39,7 @@ class Consumer():
             # after some period of inactivity
             self._consumer = KafkaConsumer(self.topic,
                                            group_id=self.group_id,
-                                           auto_offset_reset='earliest',
+                                           auto_offset_reset=auto_offset_reset,
                                            **self.config)
         except Exception as ex:
             print("Exception encountered while trying to connect to Kafka")

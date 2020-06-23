@@ -10,22 +10,7 @@ import time
 from api_client import APIClient
 from simulator import simulate
 from kafka import KafkaProducer
-
-# Default time interval (frequency) of data collection
-# Set to every 5 min
-DEFAULT_INTERVAL = 300
-
-# Number of records in one page of a multi-page api call,
-DEFAULT_PAGE_SIZE = 200
-
-# Number of datapoints to be generaged When sensor readings are simulated
-SIMULATED_BATCH_SIZE = 1000
-
-# Default kafka producer config
-DEFAULT_PRODUCER_CONFIG = {
-    "bootstrap_servers": ['10.0.1.16:9092'],
-    "value_serializer": lambda val: json.dumps(val).encode('utf-8')
-}
+from constants import DEFAULT_INTERVAL, DEFAULT_PAGE_SIZE, SIMULATED_BATCH_SIZE, DEFAULT_PRODUCER_CONFIG
 
 
 class Producer():
