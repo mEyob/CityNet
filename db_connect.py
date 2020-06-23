@@ -3,13 +3,12 @@
 PostgreSQL/TimeScaleDB interface for Kafka Consumers
 """
 
-import psycopg2
-from psycopg2.extras import execute_values
 import os
 import time
 import json
-
-CONNECTION = json.loads(os.environ["CONNECTION"])
+from constants import CONNECTION
+import psycopg2
+from psycopg2.extras import execute_values
 
 if CONNECTION["host"][-3:] == "187":
     db_type = "TSDB"
