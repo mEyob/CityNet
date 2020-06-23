@@ -6,22 +6,19 @@ database connector.
 """
 from kafka import KafkaConsumer
 from db_connect import insert_in_db
+from constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_DB_PAGE_SIZE
 import argparse
 import json
 import time
 import os
 
-DEFAULT_CONSUMER_CONFIG = {
-    "bootstrap_servers": ['10.0.1.16:9092'],
-    "value_deserializer": lambda val: json.loads(val.decode('utf-8'))
-}
-
-# Max number of records in a batch insertion
-DEFAULT_DB_PAGE_SIZE = 100
-
 
 class Consumer():
-    def __init__(self, topic, group_id, config):
+    def __init__(self,
+                 topic,
+                 group_id,
+                 auto_offset_reset='latest',
+                 config=DEFAULT_CONSUMER_CONFIG):
         """
         A Kafka consumer.
         :param topic: a topic the consumer subscribes to
@@ -31,17 +28,18 @@ class Consumer():
         self.topic = topic
         self.group_id = group_id
         self.config = config
-        self.connect_kafka()
+        self.connect_kafka(auto_offset_reset)
 
-    def connect_kafka(self):
+    def connect_kafka(self, auto_offset_reset):
         """
         Make a Kafka connection as a consumer.
         """
         try:
+            # set consumer_timeout_m to make the message iterator stops
+            # after some period of inactivity
             self._consumer = KafkaConsumer(self.topic,
                                            group_id=self.group_id,
-                                           auto_offset_reset='earliest',
-                                           consumer_timeout_ms=10000,
+                                           auto_offset_reset=auto_offset_reset,
                                            **self.config)
         except Exception as ex:
             print("Exception encountered while trying to connect to Kafka")
@@ -52,12 +50,21 @@ class Consumer():
         Iteratively write kafka messages into DB.
         :param db_pagesize: Max number of records in a batch insertion
         """
+        messages = []
         try:
             for message in self._consumer:
-                preprocessed = self.preprocess(message.value)
+                messages.extend(message.value)
+                if len(messages) >= db_pagesize:
+                    preprocessed = self.preprocess(messages)
+                    if preprocessed:
+                        insert_in_db(self.topic, preprocessed, db_pagesize)
+                    messages = []
+        except StopIteration:
+            if len(messages) > 0:
+                preprocessed = self.preprocess(messages)
                 if preprocessed:
-                    insert_in_db(self.topic, preprocessed, len(message.value),
-                                 db_pagesize)
+                    insert_in_db(self.topic, preprocessed, db_pagesize)
+
         except Exception as ex:
             print("Exception encountered while trying to read messages")
             print(str(ex))
@@ -75,24 +82,23 @@ class Consumer():
 
         processed = None
 
-        try:
-            if self.topic == "sensors":
-                processed = ((row["path"], row["uom"], cast(int, row["min"]),
-                              cast(int, row["max"]), row["data_sheet"])
-                             for row in data)
-            elif self.topic == "observations":
-                none_val_removed = filter(
-                    lambda row: (row["timestamp"] is not None) and
-                    (cast(float, row["value"])), data)
-                processed = ((row["sensor_path"], row["timestamp"],
-                              cast(float, row["value"]), row["node_vsn"])
-                             for row in none_val_removed)
-            elif self.topic == "nodes":
-                processed = ((row["vsn"], *lat_long(
-                    row["location"]["geometry"]["coordinates"]))
-                             for row in data if row["address"] != "TBD")
-        except Exception as ex:
-            print(str(ex))
+        if self.topic == "sensors":
+            processed = ((row["path"], row["uom"], cast(int, row["min"]),
+                          cast(int, row["max"]), row["data_sheet"])
+                         for row in data)
+        elif self.topic == "observations":
+            none_val_removed = filter(
+                lambda row:
+                (row["timestamp"] is not None) and (cast(float, row["value"])),
+                data)
+            processed = [(row["sensor_path"], row["timestamp"],
+                          cast(float, row["value"]), row["node_vsn"])
+                         for row in none_val_removed]
+        elif self.topic == "nodes":
+            processed = ((row["vsn"], *lat_long(
+                row["location"]["geometry"]["coordinates"])) for row in data
+                         if row["address"] != "TBD")
+
         return processed
 
 

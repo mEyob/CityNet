@@ -141,5 +141,11 @@ cython_debug/
 # IDE
 .vscode/
 
+# environment variables and cron job
+producer_cron.sh
+
 # Environment variables and cron job
 consumer_cron.sh
+
+# Background process output
+nohup*

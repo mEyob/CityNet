@@ -7,8 +7,7 @@ import requests
 import json
 from utils import write_json, to_timestamp, is_valid, flatten_reverse
 from nodes import create_node_filter
-
-BASE_URL = "https://api-of-things.plenar.io/api/"
+from constants import BASE_URL
 
 
 class APIClient():
