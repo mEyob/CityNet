@@ -63,8 +63,6 @@ class APIClient():
                                                "%Y-%m-%dT%H:%M:%S")
             while is_valid(response) and self.is_in_interval(response):
                 responses.append(response.json()["data"])
-                if write_to_file:
-                    write_json(self.start_time, response.json(), page)
                 page += 1
                 response = self.fetch(size, page)
         else:
@@ -72,8 +70,10 @@ class APIClient():
                 responses.append(response.json()["data"])
                 page += 1
                 response = self.fetch(size, page)
-
-        return flatten_reverse(responses)
+        responses = flatten_reverse(responses)
+        if write_to_file:
+            write_json(self.start_time, responses, page)
+        return responses
 
     def is_in_interval(self, response):
         """
@@ -99,5 +99,5 @@ if __name__ == "__main__":
     # sensor 'obervations' for the 'chicago' project
     api = APIClient("chicago", "observations", 300)
 
-    responses = api.fetch_records(200)
+    responses = api.fetch_records(200, True)
     print(responses)
