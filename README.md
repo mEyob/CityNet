@@ -5,19 +5,17 @@
 1. [Data pipeline](README.md#data-pipeline)
 1. [Infrastructure](README.md#infrastructure)
 1. [How to run the monitoring platform](README.md#how-to-run-the-monitoring-platform)
-1. [Assumptions](README.md#assumptions)
 1. [Contact Information](README.md#contact-information)
 
 
 ## Introduction
-Fire hazard, poor air quality and excessive noise are some of the environmental challenges that have 
-become synonimous with large cities. While these problems are well known to the public, there is still a lack of monitoring platforms, where various stakeholders can monitor the environmental conditions on a block-by-block resolution.
+Fire hazards, poor air quality and excessive noise are some of the environmental challenges that large-city residents face. While these problems are well known to the public, there is still a lack of monitoring platforms, where various stakeholders can monitor the environmental conditions on a block-by-block resolution.
 
 The [Array of Things](https://arrayofthings.github.io/) project aims to tackle this problem for Chicago city by providing real-time information on environmental and air quality conditions using more than 100 sensor nodes deployed at selected locations in the city.
 
-This repo provides a data pipeline for streaming sensor data from the Array of Things API server. New sensor readings are fetched every 5 minute (interval set by the server) and stored in a Timescaledb database. 
+This repo provides a data pipeline for streaming sensor data from the Array of Things API server. New sensor readings are fetched every 5 minutes (interval set by the server) and stored in a Timescaledb database. 
 
-Informative visualizations are made by querying the database. Because of its seamless integration with Timescaledb and its support for time series visualization, [Grafana](https://grafana.com/) is used to create the visualizations. Grafana also has a builtin support for setting a threshold and for sending notification alerts when the threshold is breached, which is a useful functionality with sensor readings.  
+Informative visualizations are made by querying the database. Because of its seamless integration with Timescaledb and its support for time series visualization, [Grafana](https://grafana.com/) is used to create the visualizations. Grafana also has builtin support for setting a threshold and for sending notification alerts when the threshold is breached, which is a useful functionality for sensor readings.  
 
 A [backend module](citynet/monitor.py) for real-time anomaly detection and key summary statistics is also provided in this repo.
 
@@ -77,5 +75,7 @@ python consumer.py --help
 
 ## Contact information
 [Misikir Eyob](https://meyob.github.io)
+
 [LinkedIn](https://www.linkedin.com/in/misikir-eyob/)
+
 mikireyob@gmail.com
