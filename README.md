@@ -5,7 +5,6 @@
 1. [Data pipeline](README.md#data-pipeline)
 1. [Infrastructure](README.md#infrastructure)
 1. [How to run the monitoring platform](README.md#how-to-run-the-monitoring-platform)
-1. [Assumptions](README.md#assumptions)
 1. [Contact Information](README.md#contact-information)
 
 
