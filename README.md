@@ -13,7 +13,7 @@
 Fire hazard, poor air quality and excessive noise are some of the environmental challenges that have 
 become synonimous with large cities. While these problems are well known to the public, there is still a lack of monitoring platforms, where various stakeholders can monitor the environmental conditions on a block-by-block resolution.
 
-The [Array of Things](https://arrayofthings.github.io/) project aims to tackle this problem by providing real-time information on environmental and air quality conditions by leveraging a city-wide sensor network deployed in Chicago city.
+The [Array of Things](https://arrayofthings.github.io/) project aims to tackle this problem for Chicago city by providing real-time information on environmental and air quality conditions using more than 100 sensor nodes deployed at selected locations in the city.
 
 This repo provides a data pipeline for streaming sensor data from the Array of Things API server. New sensor readings are fetched every 5 minute (interval set by the server) and stored in a Timescaledb database. 
 
@@ -30,13 +30,13 @@ Data is fetched by the [API client](citynet/api_client.py) and pushed into Kafka
 
 On the other side of Kafka, each service registers as a [Kafka consumer](citynet/consumer.py) with a service-specific consumer group. This allows us to decouple the services from each other. 
 
-<center><img src="img/pipeline-architecture.jpg" align="middle" style="width: 500px; height: 300px" /></center>
+<center><img src="img/pipeline-architecture.jpg" align="middle" style="width: 400px; height: 300px" /></center>
 
 ## Infrastructure
 
 The infrastructure setup largely depends on the available budget and non-functional requirements such as availability and fault-tolerance. The following figure shows the infrastructure setup on AWS. 
 
-<center><img src="img/infrastructure.png" align="middle" style="width: 500px; height: 300px" /></center>
+<center><img src="img/infrastructure.png" align="middle" style="width: 400px; height: 300px" /></center>
 
 ## How to run the monitoring platform
 
