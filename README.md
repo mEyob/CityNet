@@ -77,5 +77,7 @@ python consumer.py --help
 
 ## Contact information
 [Misikir Eyob](https://meyob.github.io)
+
 [LinkedIn](https://www.linkedin.com/in/misikir-eyob/)
+
 mikireyob@gmail.com
