@@ -1,3 +1,8 @@
+"""
+--nodes.py--
+Generates a nodes filter for an API call to the 
+Array of Things API server.
+"""
 NODES = [
     'W03B', 'W037', 'W00X', 'W00D', 'W00C', 'W00B', 'W00A', 'W009', 'W007',
     'W006', 'W004', 'W002', 'W001', 'W000', 'VN0', 'THS1', 'SPS2', 'SPS1',

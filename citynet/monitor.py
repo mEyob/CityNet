@@ -9,9 +9,9 @@ import argparse
 import numpy as np
 from datetime import datetime
 from tabulate import tabulate
-from consumer import Consumer
-from utils import to_timestamp
-from constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD
+from citynet.consumer import Consumer
+from citynet.utils import to_timestamp
+from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD
 
 
 class Monitor(Consumer):
@@ -86,8 +86,8 @@ class Monitor(Consumer):
         stat_table = [["Device", data.get("device")],
                       ["Current time", data.get("current_time")],
                       ["Monitoring duration", data.get("monitoring_duration")],
-                      ["Num of observ.", data.get("num of observ")], 
-                      ["Mean", data.get("mean")],
+                      ["Num of observ.", data.get("num of observ")],
+                      ["Mean",data.get("mean")],
                       ["STD", data.get("std")],
                       ["25th", data.get("percentiles")[0]],
                       ["50th", data.get("percentiles")[1]],

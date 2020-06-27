@@ -1,0 +1,9 @@
+from citynet import monitor
+from citynet import constants
+from flask import Flask
+
+device_monitor = monitor.Monitor("observations", "detect",
+                                 constants.DEFAULT_CONSUMER_CONFIG, "device")
+app = Flask(__name__)
+
+from flask_app import route
