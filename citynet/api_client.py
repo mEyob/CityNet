@@ -5,9 +5,9 @@ Module for making api requests to https://api-of-things.plenar.io/api/
 
 import requests
 import json
-from utils import write_json, to_timestamp, is_valid, flatten_reverse
-from nodes import create_node_filter
-from constants import BASE_URL
+from citynet.utils import write_json, to_timestamp, is_valid, flatten_reverse
+from citynet.nodes import create_node_filter
+from citynet.constants import BASE_URL
 
 
 class APIClient():

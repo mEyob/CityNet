@@ -7,10 +7,10 @@ related to another end point) and puts it in kafka
 import json
 import argparse
 import time
-from api_client import APIClient
-from simulator import simulate
+from citynet.api_client import APIClient
+from citynet.simulator import simulate
 from kafka import KafkaProducer
-from constants import DEFAULT_INTERVAL, DEFAULT_PAGE_SIZE, SIMULATED_BATCH_SIZE, DEFAULT_PRODUCER_CONFIG
+from citynet.constants import DEFAULT_INTERVAL, DEFAULT_PAGE_SIZE, SIMULATED_BATCH_SIZE, DEFAULT_PRODUCER_CONFIG
 
 
 class Producer():

@@ -6,7 +6,7 @@ PostgreSQL/TimeScaleDB interface for Kafka Consumers
 import os
 import time
 import json
-from constants import CONNECTION
+from citynet.constants import CONNECTION
 import psycopg2
 from psycopg2.extras import execute_values
 
