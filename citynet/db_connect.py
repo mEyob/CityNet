@@ -4,11 +4,16 @@ PostgreSQL/TimeScaleDB interface for Kafka Consumers
 """
 
 import os
+import sys
 import time
 import json
-from citynet.constants import CONNECTION
 import psycopg2
 from psycopg2.extras import execute_values
+
+# citynet imports
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
+from citynet.constants import CONNECTION
 
 if CONNECTION["host"][-3:] == "187":
     db_type = "TSDB"
