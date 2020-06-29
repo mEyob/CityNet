@@ -17,7 +17,7 @@ This repo provides a data pipeline for streaming sensor data from the Array of T
 
 Informative visualizations are made by querying the database. Because of its seamless integration with Timescaledb and its support for time series visualization, [Grafana](https://grafana.com/) is used to create the visualizations. Grafana also has builtin support for setting a threshold and for sending notification alerts when the threshold is breached, which is a useful functionality for sensor readings.  
 
-A [backend module](citynet/monitor.py) for real-time anomaly detection and key summary statistics is also provided in this repo.
+A [backend module](citynet/monitor.py) and a [web interface](flask_app) for real-time/historical anomaly detection and key summary statistics is also provided in this repo.
 
 Please click this image for a short demo of the visualization dashboard.
 [![Demo](img/demo-screenshot.png)](https://youtu.be/fZgwQc67qnk "Demo")
@@ -28,7 +28,9 @@ Data is fetched by the [API client](citynet/api_client.py) and pushed into Kafka
 
 On the other side of Kafka, each service registers as a [Kafka consumer](citynet/consumer.py) with a service-specific consumer group. This allows us to decouple the services from each other. 
 
-<center><img src="img/pipeline-architecture.jpg" align="middle" style="width: 400px; height: 300px" /></center>
+Streaming data is preprocessed and stored in the database as well as being used by the flask server for outlier detection.
+
+<center><img src="img/pipeline-architecture.png" align="middle" style="width: 400px; height: 300px" /></center>
 
 ## Infrastructure
 
@@ -65,13 +67,20 @@ source <virtual-env-name>\bin\activate
 pip install -r requirements.txt
 ```
 
-10. Run Kafka producer and consumers. To check the available options:
+10. Set database connection arguments as an environmental variable
+
+```bash
+export CONNECTION='{"host":"<host-IP>", "port":<port-number>, "user":"<username>", "database":"<database-name>", "password":"<password>"}'
+```
+Set environment variable for the flask app if needed.
+
+11. Run Kafka producer and consumers. To check the available options:
 
 ```python
 python producer.py --help
 python consumer.py --help
 ```
-11. Connect Grafana to the database and design a dashboard
+12. Connect Grafana to the database and design a dashboard. Run the flask app for outlier detection.
 
 ## Contact information
 [Misikir Eyob](https://meyob.github.io)
