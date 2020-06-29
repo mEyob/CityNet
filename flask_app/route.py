@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
 from flask_app import device_monitor, app
 from flask import request, jsonify, render_template
 
@@ -23,13 +28,13 @@ def monitor():
     summary = {
         key: value
         for key, value in result.items()
-        if key not in ["Outliers: ", "Percentiles: "]
+        if key not in ["Outliers:", "Percentiles:"]
     }
 
-    summary["25th"] = result.get("Percentiles: ")[0]
-    summary["50th"] = result.get("Percentiles: ")[1]
-    summary["75th"] = result.get("Percentiles: ")[2]
-    summary["95th"] = result.get("Percentiles: ")[3]
+    summary["25th"] = result.get("Percentiles:")[0]
+    summary["50th"] = result.get("Percentiles:")[1]
+    summary["75th"] = result.get("Percentiles:")[2]
+    summary["95th"] = result.get("Percentiles:")[3]
 
     for key, value in summary.items():
         if isinstance(value, float):
