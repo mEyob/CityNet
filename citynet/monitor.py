@@ -5,13 +5,15 @@ A module for collecting summary statistics and
 outliers for a given sensor device.
 """
 
+import sys
 import argparse
+import psycopg2
 import numpy as np
 from datetime import datetime
 from tabulate import tabulate
 from citynet.consumer import Consumer
 from citynet.utils import to_timestamp
-from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD
+from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD, CONNECTION
 
 
 class Monitor(Consumer):
@@ -45,36 +47,67 @@ class Monitor(Consumer):
                             "end": latest
                         }
                     }
+    def from_db(self, duration):
+        """
+        Fetch sensor data from database.
+        """
+        query = """SELECT value 
+        FROM aot.observations 
+        WHERE sensor_path = '{}' AND
+        ts > NOW() - INTERVAL '{} second'
+        """.format(self.device_name, duration)
 
-    def collect_stats(self, duration):
+        connection = None
+        rows = None
+
+        try:
+            connection = psycopg2.connect(**CONNECTION)
+            cursor = connection.cursor()
+            cursor.execute(query)
+            rows = cursor.fetchall()
+        except psycopg2.DatabaseError as e:
+            print(e)
+            sys.exit(1)
+        finally:
+            if connection:
+                connection.close()
+        if rows:
+            rows = [entry[0] for entry in rows]
+        return rows
+
+    def collect_stats(self, duration, source=None):
         """
         A method for monitoring sensor readings.
         :param duration: length of monitoring time
         """
-        data = []
+        data = {}
         stat = {}
         outliers = None
+        num_of_observations = 0
 
-        data = self.ingest_records(duration)
-        data = data.get("records")
+        if source is None or source == "live":
+            data = self.ingest_records(duration)
+            data = data.get("records")
+            data = list(map(lambda x: float(x.get("value")), data))
+        elif source == "historical":
+            data = self.from_db(duration)
 
         if data:
-            data = list(map(lambda x: float(x.get("value")), data))
-
+            num_of_observations = len(data)
             stat = self.stats(data)
             outliers = self.outlier(data)
 
         time = datetime.now()
         time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
         return {
-            "device": self.device_name,
-            "current_time": time_str,
-            "monitoring_duration": str(duration) + ' seconds',
-            "num of observ": len(data),
-            "mean": stat.get("mean", "No data"),
-            "std": stat.get("std", "No data"),
-            "percentiles": stat.get("percentiles", ["No data"] * 4),
-            "outliers": outliers
+                "Device: ": self.device_name,
+                "Current time: ": time_str,
+                "Monitoring duration: ": str(duration) + ' seconds',
+                "Num. of observations: ": num_of_observations,
+                "Mean: ": stat.get("mean", "No data"),
+                "Standard dev: ": stat.get("std", "No data"),
+                "Percentiles: ": stat.get("percentiles", ["No data"] * 4),
+                "Outliers: ": outliers
         }
 
     @staticmethod
