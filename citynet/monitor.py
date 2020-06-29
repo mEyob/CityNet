@@ -9,6 +9,7 @@ import sys
 import os
 import argparse
 import psycopg2
+from multiprocessing import Process
 import numpy as np
 from datetime import datetime
 from tabulate import tabulate
@@ -25,6 +26,7 @@ class Monitor(Consumer):
     def __init__(self, topic, group_id, config, device):
         Consumer.__init__(self, topic, group_id, config=config)
         self.device_name = device.lower()
+        self.records = []
 
     def ingest_records(self, duration):
         """
@@ -32,9 +34,9 @@ class Monitor(Consumer):
         :param duration: time period of interest
         """
         start = None
-        records = []
         ts_format = "%Y-%m-%dT%H:%M:%S"
         start = datetime.utcnow().timestamp()
+
         for message in self._consumer:
             for record in message.value:
                 latest = to_timestamp(record.get("timestamp"), ts_format)
@@ -42,17 +44,10 @@ class Monitor(Consumer):
                     continue
                 if latest - start < duration:
                     if record.get("sensor_path").lower() == self.device_name:
-                        records.append(record)
+                        self.records.append(record)
                 else:
                     if self._consumer:
                         self._consumer.close()
-                    return {
-                        "records": records,
-                        "meta": {
-                            "start": start,
-                            "end": latest
-                        }
-                    }
 
     def from_db(self, duration):
         """
@@ -91,11 +86,20 @@ class Monitor(Consumer):
         stat = {}
         outliers = None
         num_of_observations = 0
+        max_execution_time = 2 * duration
 
         if source is None or source == "live":
-            data = self.ingest_records(duration)
+
+            control_process = Process(target=self.ingest_records,
+                                      args=(duration, ))
+            control_process.start()
+            control_process.join(timeout=max_execution_time)
+            control_process.terminate()
+            if self._consumer:
+                self._consumer.close()
+
+            data = self.records
             if data:
-                data = data.get("records")
                 data = list(map(lambda x: float(x.get("value")), data))
         elif source == "historical":
             data = self.from_db(duration)
@@ -125,9 +129,13 @@ class Monitor(Consumer):
         """
         print("\n**** SUMMARY TABLE ****")
         stat_table = [["Device", data.get("Device:")],
-                      ["Current time", data.get("Current time:")],
-                      ["Monitoring duration", data.get("Monitoring duration:")], 
-                      ["Num of observ.", data.get("Num. of observations:")],
+                      ["Current time",
+                       data.get("Current time:")],
+                      [
+                          "Monitoring duration",
+                          data.get("Monitoring duration:")
+                      ], ["Num of observ.",
+                          data.get("Num. of observations:")],
                       ["Mean", data.get("Mean:")],
                       ["STD", data.get("Standard dev:")],
                       ["25th", data.get("Percentiles:")[0]],
