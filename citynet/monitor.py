@@ -23,10 +23,9 @@ from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD
 
 
 class Monitor(Consumer):
-    def __init__(self, topic, group_id, config, device):
+    def __init__(self, topic, group_id, config):
         Consumer.__init__(self, topic, group_id, config=config)
-        self.device_name = device.lower()
-        self.records = []
+        self.data_dict = {}
 
     def ingest_records(self, duration):
         """
@@ -43,8 +42,11 @@ class Monitor(Consumer):
                 if latest < start:
                     continue
                 if latest - start < duration:
-                    if record.get("sensor_path").lower() == self.device_name:
-                        self.records.append(record)
+                    sensor_name = record.get("sensor_path")
+                    if sensor_name in self.data_dict:
+                        self.data_dict[sensor_name].append(record.get("value"))
+                    else:
+                        self.data_dict[sensor_name] = [record.get("value")]
                 else:
                     if self._consumer:
                         self._consumer.close()
@@ -53,11 +55,10 @@ class Monitor(Consumer):
         """
         Fetch sensor data from database.
         """
-        query = """SELECT value 
+        query = """SELECT sensor_path, value 
         FROM aot.observations 
-        WHERE sensor_path = '{}' AND
-        ts > NOW() - INTERVAL '{} second'
-        """.format(self.device_name, duration)
+        WHERE ts > NOW() - INTERVAL '{} second'
+        """.format(duration)
 
         connection = None
         rows = None
@@ -73,11 +74,23 @@ class Monitor(Consumer):
         finally:
             if connection:
                 connection.close()
-        if rows:
-            rows = [entry[0] for entry in rows]
-        return rows
 
-    def collect_stats(self, duration, source=None):
+        if rows:
+            self.make_dict(rows)
+
+        return self.make_dict(rows)
+
+    def make_dict(self, data):
+
+        data_dict = {}
+        for tupl in data:
+            if tupl[0] in data_dict:
+                data_dict[tupl[0]].append(tupl[1])
+            else:
+                data_dict[tupl[0]] = [tupl[1]]
+        return data_dict
+
+    def collect_stats(self, duration, source="historical"):
         """
         A method for monitoring sensor readings.
         :param duration: length of monitoring time
@@ -85,10 +98,11 @@ class Monitor(Consumer):
         data = {}
         stat = {}
         outliers = None
+        stats_list = []
         num_of_observations = 0
         max_execution_time = 2 * duration
 
-        if source is None or source == "live":
+        if source == "live":
 
             control_process = Process(target=self.ingest_records,
                                       args=(duration, ))
@@ -98,28 +112,32 @@ class Monitor(Consumer):
             if self._consumer:
                 self._consumer.close()
 
-            data = self.records
-            if data:
-                data = list(map(lambda x: float(x.get("value")), data))
+            data = self.data_dict
+
         elif source == "historical":
             data = self.from_db(duration)
 
         if data:
-            num_of_observations = len(data)
-            stat = self.stats(data)
-            outliers = self.outlier(data)
+            for sensor_name in data.keys():
+                num_of_observations = len(data[sensor_name])
+                stat = self.stats(data[sensor_name])
+                outliers = self.outlier(data[sensor_name])
+                stats_list.append({
+                    "sensor_name": sensor_name,
+                    "num_of_observations": num_of_observations,
+                    "mean": stat["mean"],
+                    "standard_dev": stat["std"],
+                    "IQR": stat["iqr"],
+                    "outlier_count": len(outliers)
+                })
 
-        time = datetime.now()
+        # stats_list.sort(reverse=True, key = lambda x: x["outlier_count"])
+        time = datetime.utcnow()
         time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
         return {
-            "Device:": self.device_name,
-            "Current time:": time_str,
-            "Monitoring duration:": str(duration) + ' seconds',
-            "Num. of observations:": num_of_observations,
-            "Mean:": stat.get("mean", "No data"),
-            "Standard dev:": stat.get("std", "No data"),
-            "Percentiles:": stat.get("percentiles", ["No data"] * 4),
-            "Outliers:": outliers
+            "Current time": time_str,
+            "Monitoring duration": str(duration) + ' seconds',
+            "stats": stats_list
         }
 
     @staticmethod
@@ -158,10 +176,12 @@ class Monitor(Consumer):
         """
         Collect mean, standard deviation and percentile statistics. 
         """
+
+        q75, q25 = np.percentile(data, [75, 25])
         return {
-            "mean": np.mean(data),
-            "std": np.std(data),
-            "percentiles": np.percentile(data, [25, 50, 75, 95])
+            "mean": round(np.mean(data), 2),
+            "std": round(np.std(data), 2),
+            "iqr": round(q75 - q25, 2)
         }
 
     @staticmethod
@@ -197,6 +217,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     detector = Monitor(args.topic, args.cgroup, args.conf, args.device)
-    data = detector.collect_stats(args.period)
+    data = detector.collect_stats(args.period, "historical")
     if data:
         detector.display(data)
