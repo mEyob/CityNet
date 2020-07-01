@@ -1,96 +1,60 @@
 {% extends 'bootstrap/base.html' %}
+{% block head %}
+{{super()}}
+  <meta charset="UTF-8">
+  <title>Outlier</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+{% endblock %}
 
 {% block title %}
     Outlier Monitor
 {% endblock %}
 
 {% block content  %}
-<body style=" background-color:darkslategray;"></body>
- <div class="container">
+
+<body style="margin: auto; "></body>
+ <div class="container" style="margin: auto;">
    <br>
    <br>
-    <h1 style="color:lightgrey;">Outlier monitor</h1>
+    <h1>Outlier monitor</h1>
     <form action="{{ url_for('monitor')}}" method="post">
-      <select size="1" id="default" title="Device" name="device" required>
-        <option value="">-Select a sensor-</option>
-        <option value="chemsense.co.concentration">chemsense.co.concentration</option>
-        <option value="chemsense.oxidizing_gases.concentration">chemsense.oxidizing_gases.concentration</option>
-        <option value="chemsense.at1.temperature">chemsense.at1.temperature</option>
-        <option value="chemsense.lps25h.temperature">chemsense.lps25h.temperature</option>
-        <option value="plantower.pms7003.2_5um_particle">plantower.pms7003.2_5um_particle</option>
-        <option value="lightsense.tmp421.temperature">lightsense.tmp421.temperature</option>
-        <option value="lightsense.apds_9006_020.intensity">lightsense.apds_9006_020.intensity</option>
-        <option value="metsense.mma8452q.acceleration_x">metsense.mma8452q.acceleration_x</option>
-        <option value="metsense.hih4030.humidity">metsense.hih4030.humidity</option>
-        <option value="hemsense.at2.temperature">hemsense.at2.temperature</option>
-        <option value="chemsense.o3.concentration">chemsense.o3.concentration</option>
-        <option value="alphasense.opc_n2.pm10">alphasense.opc_n2.pm10</option>
-        <option value="lightsense.hih6130.humidity">lightsense.hih6130.humidity</option>
-        <option value="plantower.pms7003.10um_particle">plantower.pms7003.10um_particle</option>
-        <option value="chemsense.at0.temperature">chemsense.at0.temperature</option>
-        <option value="metsense.pr103j2.temperature">metsense.pr103j2.temperature</option>
-        <option value="plantower.pms7003.pm10_atm">plantower.pms7003.pm10_atm</option>
-        <option value="hemsense.at3.temperature">hemsense.at3.temperature</option>
-        <option value="lantower.pms7003.5um_particle">lantower.pms7003.5um_particle</option>
-        <option value="hemsense.at1.temperature">hemsense.at1.temperature</option>
-        <option value="ightsense.hmc5883l.magnetic_field_y">ightsense.hmc5883l.magnetic_field_y</option>
-        <option value="hemsense.no2.concentration">hemsense.no2.concentration</option>
-        <option value="hemsense.lps25h.pressure">hemsense.lps25h.pressure</option>
-        <option value="lphasense.opc_n2.sample_flow_rate">lphasense.opc_n2.sample_flow_rate</option>
-        <option value="etsense.spv1840lr5h_b.intensity">etsense.spv1840lr5h_b.intensity</option>
-        <option value="ightsense.hmc5883l.magnetic_field_x">ightsense.hmc5883l.magnetic_field_x</option>
-        <option value="lantower.pms7003.1um_particle">lantower.pms7003.1um_particle</option>
-        <option value="lantower.pms7003.pm25_atm">lantower.pms7003.pm25_atm</option>
-        <option value="hemsense.reducing_gases.concentration">hemsense.reducing_gases.concentration</option>
-        <option value="hemsense.oxidizing_gases.concentration">hemsense.oxidizing_gases.concentration</option>
-        <option value="hemsense.so2.concentration">hemsense.so2.concentration</option>
-        <option value="etsense.tsys01.temperature">etsense.tsys01.temperature</option>
-        <option value="ightsense.tsl250rd.intensity">ightsense.tsl250rd.intensity</option>
-        <option value="lantower.pms7003.point_5um_particle">lantower.pms7003.point_5um_particle</option>
-        <option value="lphasense.opc_n2.pm1">lphasense.opc_n2.pm1</option>
-        <option value="etsense.tmp112.temperature">etsense.tmp112.temperature</option>
-        <option value="lantower.pms7003.point_3um_particle">lantower.pms7003.point_3um_particle</option>
-        <option value="lantower.pms7003.pm1_atm">lantower.pms7003.pm1_atm</option>
-        <option value="etsense.mma8452q.acceleration_y">etsense.mma8452q.acceleration_y</option>
-        <option value="etsense.htu21d.humidity">etsense.htu21d.humidity</option>
-        <option value="etsense.mma8452q.acceleration_z">etsense.mma8452q.acceleration_z</option>
-        <option value="ightsense.tsl260rd.intensity">ightsense.tsl260rd.intensity</option>
-        <option value="etsense.htu21d.temperature">etsense.htu21d.temperature</option>
-        <option value="hemsense.co.concentration">hemsense.co.concentration</option>
-        <option value="ightsense.ml8511.intensity">ightsense.ml8511.intensity</option>
-        <option value="hemsense.h2s.concentration">hemsense.h2s.concentration</option>
-        <option value="etsense.bmp180.pressure">etsense.bmp180.pressure</option>
-        <option value="etsense.bmp180.temperature">etsense.bmp180.temperature</option>
-        <option value="ightsense.hmc5883l.magnetic_field_z">ightsense.hmc5883l.magnetic_field_z</option>
-        <option value="lphasense.opc_n2.sampling_period">lphasense.opc_n2.sampling_period</option>
-        <option value="lphasense.opc_n2.pm2_5">lphasense.opc_n2.pm2_5</option>
-      </select>
-    	<input type="number" min="1" name="duration" placeholder="Monitoring duration (sec)" required="required" /><br>
-      <p style="color:lightgrey;">Data source:</p>
+    	<input type="number" min="1" name="duration" placeholder="Monitoring duration (seconds)" required="required" style="width: 20%" /><br>
+      <br>
+      <p >Data source:</p>
       <input type="radio" id="live" name="source" value="live">
-      <label for="live" style="color:lightgrey;">Live</label><br>
+      <label for="live">Live</label><br>
       <input type="radio" id="historical" name="source" value="historical">
-      <label for="historical" style="color:lightgrey;">Database</label><br><br>
+      <label for="historical">Database</label><br><br>
       <button type="submit">Monitor</button><br>
       <br>
     </form>
+  </div><br>
+
+  <div class="container">
+    <div class="col-md-6">
+      <div class="chart" id="bargraph">
+          <script>
+              var graphs = {{plot | safe}};
+              var layout = {
+              autosize: false,
+              width: 1200,
+              height: 500,
+              };
+              Plotly.plot('bargraph',graphs,{});
+          </script>
+      </div>
   </div>
+</div><br>
+
   <div>
-   <table class="thick-border" style = "color:lightgrey; position:relative; left:80px; top:2px; border-spacing:5px; border-collapse: separate;">
-        {% if summary %}
-        <tr>
-          <th>Field</th>
-          <th>Value</th>
-        </tr>
-          {% for k, v in summary.items() %}
-                  <tr>
-                    <td>{{ k }}</td>
-                    <td>{{ v }}</td>
-                          
-                  </tr>
-          {% endfor %}
-        {% endif %}
-   </table>
+   
+  <a href="/sensor_detail"><input type="button" value="Sensor detail"></a>
+  
    <br>
   </div>
+
+<script src="{{ url_for('static', filename='js/jquery-1.11.1.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/plots.js') }}"></script>
+
 {% endblock  %}

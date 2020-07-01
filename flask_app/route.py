@@ -1,5 +1,12 @@
 import os
 import sys
+import plotly
+import json
+import numpy as np
+import plotly.graph_objs as go
+
+from flask import make_response
+from datetime import datetime
 
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 
@@ -17,35 +24,78 @@ def monitor():
     '''
     For rendering results on HTML GUI
     '''
-    device_name = request.form.get('device')
     duration = request.form.get('duration')
     duration = int(duration)
     source = request.form.get('source')
 
-    device_monitor.device_name = device_name
     result = device_monitor.collect_stats(duration, source)
 
-    summary = {
+    meta = {
         key: value
-        for key, value in result.items()
-        if key not in ["Outliers:", "Percentiles:"]
+        for key, value in result.items() if key not in ["stats"]
     }
 
-    summary["25th"] = result.get("Percentiles:")[0]
-    summary["50th"] = result.get("Percentiles:")[1]
-    summary["75th"] = result.get("Percentiles:")[2]
-    summary["95th"] = result.get("Percentiles:")[3]
+    stats = result["stats"]
+    names = [stat["sensor_name"] for stat in stats]
+    num_observations = [stat["num_of_observations"] for stat in stats]
+    outliers = [stat["outlier_count"] for stat in stats]
 
-    for key, value in summary.items():
-        if isinstance(value, float):
-            summary[key] = round(value, 2)
+    plot = create_plot(names, num_observations, outliers)
 
-    if result.get("Outliers: "):
-        summary["Outlier count: "] = len(result.get("Outliers: "))
-    else:
-        summary["Outlier count:"] = 0
+    return render_template("index.html", meta=meta, stats=stats, plot=plot)
 
-    return render_template("index.html", summary=summary)
+
+@app.route('/sensor_detail', methods=['GET', 'POST'])
+def sensor_detail():
+    pass
+
+
+def chart(stats, device_name, url):
+    x = range(len(stats))
+    fig, ax = plt.subplots()
+    x_label = ['25%', '50%', 'Mean', '75th', '95th']
+    sns.barplot(x=x_label, y=stats, palette="rocket", ax=ax)
+    ax.set_ylabel(device_name)
+    plt.savefig(url)
+
+
+def create_plot(sensor_names, observations, outliers):
+    min_size = 10
+    max_size = 50
+
+    markers = []
+    min_val = min(outliers)
+    max_val = max(outliers)
+
+    for val in outliers:
+        marker = min_size + (max_size - min_size) * (val / (max_val - min_val))
+        markers.append(marker)
+
+    fig = go.Figure()
+
+    data = fig.add_trace(
+        go.Scatter(x=sensor_names,
+                   y=observations,
+                   mode='markers',
+                   marker_color=markers,
+                   marker=dict(size=markers),
+                   text=outliers))
+
+    fig.update_layout(
+        autosize=False,
+        width=1000,
+        height=600,
+        yaxis=dict(title_text="Number of readings",
+                   titlefont=dict(size=18),
+                   showgrid=False,
+                   zeroline=False),
+        xaxis=dict(showgrid=False, zeroline=False),
+        plot_bgcolor="rgb(179,226,205)",
+    )
+
+    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+
+    return graphJSON
 
 
 if __name__ == "__main__":
