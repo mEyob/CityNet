@@ -17,7 +17,7 @@ This repo provides a data pipeline for streaming sensor data from the Array of T
 
 Informative visualizations are made by querying the database. Because of its seamless integration with Timescaledb and its support for time series visualization, [Grafana](https://grafana.com/) is used to create the visualizations. Grafana also has builtin support for setting a threshold and for sending notification alerts when the threshold is breached, which is a useful functionality for sensor readings.  
 
-A [backend module](citynet/monitor.py) and a [web interface](flask_app) for real-time/historical anomaly detection and key summary statistics is also provided in this repo.
+A web-based sensor data outlier detection module is also provided.
 
 Please click this image for a short demo of the visualization dashboard.
 [![Demo](img/demo-screenshot.png)](https://youtu.be/fZgwQc67qnk "Demo")
