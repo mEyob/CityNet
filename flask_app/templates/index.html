@@ -47,12 +47,14 @@
   </div>
 </div><br>
 
-  <div>
-   
-  <a href="/sensor_detail"><input type="button" value="Sensor detail"></a>
+{% if plot %}
+<div style="padding-left: 200px; padding-bottom: 50px;">
+<form action="{{ url_for('detail') }}">
+  <input type="submit" value="More detail" />
+</form>
+</div>
+{% endif %}
   
-   <br>
-  </div>
 
 <script src="{{ url_for('static', filename='js/jquery-1.11.1.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/plots.js') }}"></script>
