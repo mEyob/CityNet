@@ -1,0 +1,106 @@
+{% extends 'bootstrap/base.html' %}
+{% block head %}
+{{super()}}
+  <meta charset="UTF-8">
+  <title>Outlier</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+  <link rel="stylesheet" href="https://developers.google.com//maps/documentation/javascript/demos/demos.css">
+    <style>#map { height: 100%; width: 100%; }</style>
+  
+{% endblock %}
+
+{% block title %}
+  Sensor data and location
+{% endblock %}
+
+{% block content  %}
+<body style="margin: auto; "></body>
+ <div class="container" style="margin: auto;">
+   <br>
+   <br>
+    <h1>Sensor details</h1>
+<form action="{{ url_for('detail')}}" method="post">
+<select size="1" id="default" title="Device" name="device" required>
+    <option value="">-Select a sensor-</option>
+   <option value="alphasense.opc_n2.pm1">alphasense.opc_n2.pm1</option>
+   <option value="alphasense.opc_n2.pm10">alphasense.opc_n2.pm10</option>
+   <option value="alphasense.opc_n2.pm2_5">alphasense.opc_n2.pm2_5</option>
+   <option value="alphasense.opc_n2.sample_flow_rate">alphasense.opc_n2.sample_flow_rate</option>
+   <option value="alphasense.opc_n2.sampling_period">alphasense.opc_n2.sampling_period</option>
+   <option value="chemsense.at0.temperature">chemsense.at0.temperature</option>
+   <option value="chemsense.at1.temperature">chemsense.at1.temperature</option>
+   <option value="chemsense.at2.temperature">chemsense.at2.temperature</option>
+   <option value="chemsense.at3.temperature">chemsense.at3.temperature</option>
+   <option value="chemsense.co.concentration">chemsense.co.concentration</option>
+   <option value="chemsense.h2s.concentration">chemsense.h2s.concentration</option>
+   <option value="chemsense.lps25h.pressure">chemsense.lps25h.pressure</option>
+   <option value="chemsense.lps25h.temperature">chemsense.lps25h.temperature</option>
+   <option value="chemsense.no2.concentration">chemsense.no2.concentration</option>
+   <option value="chemsense.o3.concentration">chemsense.o3.concentration</option>
+   <option value="chemsense.oxidizing_gases.concentration">chemsense.oxidizing_gases.concentration</option>
+   <option value="chemsense.reducing_gases.concentration">chemsense.reducing_gases.concentration</option>
+   <option value="chemsense.so2.concentration">chemsense.so2.concentration</option>
+   <option value="lightsense.apds_9006_020.intensity">lightsense.apds_9006_020.intensity</option>
+   <option value="lightsense.hih6130.humidity">lightsense.hih6130.humidity</option>
+   <option value="lightsense.hih6130.temperature">lightsense.hih6130.temperature</option>
+   <option value="lightsense.hmc5883l.magnetic_field_x">lightsense.hmc5883l.magnetic_field_x</option>
+   <option value="lightsense.hmc5883l.magnetic_field_y">lightsense.hmc5883l.magnetic_field_y</option>
+   <option value="lightsense.hmc5883l.magnetic_field_z">lightsense.hmc5883l.magnetic_field_z</option>
+   <option value="lightsense.ml8511.intensity">lightsense.ml8511.intensity</option>
+   <option value="lightsense.mlx75305.intensity">lightsense.mlx75305.intensity</option>
+   <option value="lightsense.tmp421.temperature">lightsense.tmp421.temperature</option>
+   <option value="lightsense.tsl250rd.intensity">lightsense.tsl250rd.intensity</option>
+   <option value="lightsense.tsl260rd.intensity">lightsense.tsl260rd.intensity</option>
+   <option value="metsense.bmp180.pressure">metsense.bmp180.pressure</option>
+   <option value="metsense.bmp180.temperature">metsense.bmp180.temperature</option>
+   <option value="metsense.hih4030.humidity">metsense.hih4030.humidity</option>
+   <option value="metsense.htu21d.humidity">metsense.htu21d.humidity</option>
+   <option value="metsense.htu21d.temperature">metsense.htu21d.temperature</option>
+   <option value="metsense.mma8452q.acceleration_x">metsense.mma8452q.acceleration_x</option>
+   <option value="metsense.mma8452q.acceleration_y">metsense.mma8452q.acceleration_y</option>
+   <option value="metsense.mma8452q.acceleration_z">metsense.mma8452q.acceleration_z</option>
+   <option value="metsense.pr103j2.temperature">metsense.pr103j2.temperature</option>
+   <option value="metsense.spv1840lr5h_b.intensity">metsense.spv1840lr5h_b.intensity</option>
+   <option value="metsense.tmp112.temperature">metsense.tmp112.temperature</option>
+   <option value="metsense.tsl250rd.intensity">metsense.tsl250rd.intensity</option>
+   <option value="metsense.tsys01.temperature">metsense.tsys01.temperature</option>
+   <option value="plantower.pms7003.10um_particle">plantower.pms7003.10um_particle</option>
+   <option value="plantower.pms7003.1um_particle">plantower.pms7003.1um_particle</option>
+   <option value="plantower.pms7003.2_5um_particle">plantower.pms7003.2_5um_particle</option>
+   <option value="plantower.pms7003.5um_particle">plantower.pms7003.5um_particle</option>
+   <option value="plantower.pms7003.pm10_atm">plantower.pms7003.pm10_atm</option>
+   <option value="plantower.pms7003.pm1_atm">plantower.pms7003.pm1_atm</option>
+   <option value="plantower.pms7003.pm25_atm">plantower.pms7003.pm25_atm</option>
+   <option value="plantower.pms7003.point_3um_particle">plantower.pms7003.point_3um_particle</option>
+   <option value="plantower.pms7003.point_5um_particle">plantower.pms7003.point_5um_particle</option>
+  </select>
+  <button type="submit">Submit</button><br>
+  <br>
+</form>
+ </div>
+
+ {% if plot %}
+ <div class="container">
+  <div class="row" style="margin: auto; padding-top: 10px; padding-left: 80px;">
+    <div class="column">
+      <div class="col-md-6">
+        <div class="chart" id="histogram">
+          <script>
+              var graphs = {{plot | safe}};
+              Plotly.plot('histogram',graphs,{});
+          </script>
+        </div>
+      </div>
+    </div><br>
+
+    <div class="column" style="padding-top: 50px;">
+      {{sensorloc.html}}{{sensorloc.js}}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}

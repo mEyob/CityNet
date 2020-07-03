@@ -28,6 +28,7 @@ DEFAULT_CONSUMER_CONFIG = {
 }
 
 CONNECTION = json.loads(os.environ["CONNECTION"])
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 
 # Base url for array-of-things api call
 BASE_URL = "https://api-of-things.plenar.io/api/"

@@ -5,12 +5,17 @@ nodes, or sensors) and sends new messages to the
 database connector.
 """
 from kafka import KafkaConsumer
-from citynet.db_connect import insert_in_db
-from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_DB_PAGE_SIZE
 import argparse
 import json
 import time
+import sys
 import os
+
+# citynet imports
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
+from citynet.db_connect import insert_in_db
+from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_DB_PAGE_SIZE
 
 
 class Consumer():

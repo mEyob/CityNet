@@ -6,56 +6,55 @@ outliers for a given sensor device.
 """
 
 import sys
+import os
 import argparse
 import psycopg2
+import multiprocessing
 import numpy as np
 from datetime import datetime
 from tabulate import tabulate
+
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
+# citynet imports
 from citynet.consumer import Consumer
 from citynet.utils import to_timestamp
 from citynet.constants import DEFAULT_CONSUMER_CONFIG, DEFAULT_MONITORING_PERIOD, CONNECTION
 
 
 class Monitor(Consumer):
-    def __init__(self, topic, group_id, config, device):
+    def __init__(self, topic, group_id, config):
         Consumer.__init__(self, topic, group_id, config=config)
-        self.device_name = device.lower()
 
-    def ingest_records(self, duration):
+    def ingest_records(self, duration, data_list):
         """
         A method for fetching sensor reading records for a given duration.
         :param duration: time period of interest
         """
         start = None
-        records = []
         ts_format = "%Y-%m-%dT%H:%M:%S"
+        start = datetime.utcnow().timestamp()
+
         for message in self._consumer:
-            if start is None:
-                start = to_timestamp(message.value[0]["timestamp"], ts_format)
-            for record in message.value:
-                latest = to_timestamp(record.get("timestamp"), ts_format)
-                if latest - start < duration:
-                    if record.get("sensor_path").lower() == self.device_name:
-                        records.append(record)
-                else:
-                    if self._consumer:
-                        self._consumer.close()
-                    return {
-                        "records": records,
-                        "meta": {
-                            "start": start,
-                            "end": latest
-                        }
-                    }
-    def from_db(self, duration):
+            preprocessed_data = self.preprocess(message.value)
+            data_list.extend(preprocessed_data)
+
+    def from_db(self, duration, sensor_name=None):
         """
         Fetch sensor data from database.
         """
-        query = """SELECT value 
-        FROM aot.observations 
-        WHERE sensor_path = '{}' AND
-        ts > NOW() - INTERVAL '{} second'
-        """.format(self.device_name, duration)
+
+        if sensor_name:
+            query = """SELECT sensor_path, value 
+            FROM aot.observations 
+            WHERE ts > NOW() - INTERVAL '{} second' AND
+            sensor_path = '{}'
+            """.format(duration, sensor_name)
+        else:
+            query = """SELECT sensor_path, value 
+            FROM aot.observations 
+            WHERE ts > NOW() - INTERVAL '{} second'
+            """.format(duration)
 
         connection = None
         rows = None
@@ -71,43 +70,71 @@ class Monitor(Consumer):
         finally:
             if connection:
                 connection.close()
-        if rows:
-            rows = [entry[0] for entry in rows]
-        return rows
 
-    def collect_stats(self, duration, source=None):
+        if rows:
+            self.make_dict(rows)
+
+        return self.make_dict(rows)
+
+    def make_dict(self, data):
+
+        data_dict = {}
+        for tupl in data:
+            if tupl[0] in data_dict:
+                data_dict[tupl[0]].append(tupl[1])
+            else:
+                data_dict[tupl[0]] = [tupl[1]]
+        return data_dict
+
+    def collect_stats(self, duration, source="historical"):
         """
         A method for monitoring sensor readings.
         :param duration: length of monitoring time
         """
         data = {}
         stat = {}
-        outliers = None
+        outliers = []
+        stats_list = []
         num_of_observations = 0
+        max_execution_time = 1.05 * duration
 
-        if source is None or source == "live":
-            data = self.ingest_records(duration)
-            data = data.get("records")
-            data = list(map(lambda x: float(x.get("value")), data))
+        if source == "live":
+            data_list = multiprocessing.Manager().list()
+            control_process = multiprocessing.Process(
+                target=self.ingest_records, args=(duration, data_list))
+            control_process.start()
+            control_process.join(timeout=max_execution_time)
+
+            data = [(entry[0], entry[2]) for entry in data_list]
+            data = self.make_dict(data)
+            control_process.terminate()
+            if self._consumer:
+                self._consumer.close()
+
         elif source == "historical":
             data = self.from_db(duration)
 
         if data:
-            num_of_observations = len(data)
-            stat = self.stats(data)
-            outliers = self.outlier(data)
+            for sensor_name in data.keys():
+                num_of_observations = len(data[sensor_name])
+                stat = self.stats(data[sensor_name])
+                outliers = self.outlier(data[sensor_name])
+                stats_list.append({
+                    "sensor_name": sensor_name,
+                    "num_of_observations": num_of_observations,
+                    "mean": stat["mean"],
+                    "standard_dev": stat["std"],
+                    "IQR": stat["iqr"],
+                    "outlier_count": len(outliers)
+                })
 
-        time = datetime.now()
+        # stats_list.sort(reverse=True, key = lambda x: x["outlier_count"])
+        time = datetime.utcnow()
         time_str = time.strftime("%Y-%m-%dT%H:%M:%S")
         return {
-                "Device: ": self.device_name,
-                "Current time: ": time_str,
-                "Monitoring duration: ": str(duration) + ' seconds',
-                "Num. of observations: ": num_of_observations,
-                "Mean: ": stat.get("mean", "No data"),
-                "Standard dev: ": stat.get("std", "No data"),
-                "Percentiles: ": stat.get("percentiles", ["No data"] * 4),
-                "Outliers: ": outliers
+            "Current time": time_str,
+            "Monitoring duration": str(duration) + ' seconds',
+            "stats": stats_list
         }
 
     @staticmethod
@@ -116,36 +143,21 @@ class Monitor(Consumer):
         Display key statistics in table format
         """
         print("\n**** SUMMARY TABLE ****")
-        stat_table = [["Device", data.get("device")],
-                      ["Current time", data.get("current_time")],
-                      ["Monitoring duration", data.get("monitoring_duration")],
-                      ["Num of observ.", data.get("num of observ")],
-                      ["Mean",data.get("mean")],
-                      ["STD", data.get("std")],
-                      ["25th", data.get("percentiles")[0]],
-                      ["50th", data.get("percentiles")[1]],
-                      ["75th", data.get("percentiles")[2]],
-                      ["95th", data.get("percentiles")[3]]]
+        stat_table = [[key, value] for key, value in data.items()]
 
         print(tabulate(stat_table, tablefmt="grid"))
-
-        outliers = data.get("outliers")
-        if outliers:
-            outliers = [[entry] for entry in outliers]
-            print(tabulate(outliers, ["Outliers"], tablefmt="grid"))
-        else:
-            print("\n**** NO OUTLIERS DETECTED FOR DEVICE {}! ****\n".format(
-                data.get("device")))
 
     @staticmethod
     def stats(data):
         """
         Collect mean, standard deviation and percentile statistics. 
         """
+
+        q75, q25 = np.percentile(data, [75, 25])
         return {
-            "mean": np.mean(data),
-            "std": np.std(data),
-            "percentiles": np.percentile(data, [25, 50, 75, 95])
+            "mean": round(np.mean(data), 2),
+            "std": round(np.std(data), 2),
+            "iqr": round(q75 - q25, 2)
         }
 
     @staticmethod
@@ -162,6 +174,36 @@ class Monitor(Consumer):
         outliers = list(filter(tail_cases, data))
         return outliers
 
+    @staticmethod
+    def get_location(sensor_path):
+        """
+        Get the location(s) of a sensor
+        """
+        query = """SELECT long, lat
+        FROM aot.nodes
+        WHERE vsn IN (
+            SELECT node_vsn
+            FROM aot.observations
+            WHERE ts > NOW() - INTERVAL '24 hours'
+            AND sensor_path = '{}'
+        )
+        LIMIT 1
+        """.format(sensor_path)
+        rows = None
+
+        try:
+            connection = psycopg2.connect(**CONNECTION)
+            cursor = connection.cursor()
+            cursor.execute(query)
+            rows = cursor.fetchall()
+        except psycopg2.DatabaseError as e:
+            print(e)
+            sys.exit(1)
+        finally:
+            if connection:
+                connection.close()
+        return rows
+
 
 if __name__ == "__main__":
     # Command line arguments
@@ -169,7 +211,6 @@ if __name__ == "__main__":
 
     parser.add_argument("-t", "--topic", help="A Kafka topic")
     parser.add_argument("-g", "--cgroup", help="Kafka consumer group")
-    parser.add_argument("-d", "--device", help="sensor device to be monitored")
     parser.add_argument("-p",
                         "--period",
                         help="Monitoring period in seconds",
@@ -180,7 +221,7 @@ if __name__ == "__main__":
                         help="Kafka consumer configuration in JSON format")
 
     args = parser.parse_args()
-    detector = Monitor(args.topic, args.cgroup, args.conf, args.device)
-    data = detector.collect_stats(args.period)
+    detector = Monitor(args.topic, args.cgroup, args.conf)
+    data = detector.collect_stats(args.period, "live")
     if data:
         detector.display(data)

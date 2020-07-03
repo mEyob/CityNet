@@ -3,8 +3,14 @@
 Module for making api requests to https://api-of-things.plenar.io/api/
 """
 
-import requests
+import sys
+import os
 import json
+import requests
+
+# citynet imports
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
 from citynet.utils import write_json, to_timestamp, is_valid, flatten_reverse
 from citynet.nodes import create_node_filter
 from citynet.constants import BASE_URL

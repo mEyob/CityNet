@@ -4,12 +4,18 @@ A kafka producer that fetches 5 minutes worth sensor measurements (or data
 related to another end point) and puts it in kafka
 """
 
+import os
+import sys
 import json
-import argparse
 import time
+import argparse
+from kafka import KafkaProducer
+
+# citynet imports
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
+
 from citynet.api_client import APIClient
 from citynet.simulator import simulate
-from kafka import KafkaProducer
 from citynet.constants import DEFAULT_INTERVAL, DEFAULT_PAGE_SIZE, SIMULATED_BATCH_SIZE, DEFAULT_PRODUCER_CONFIG
 
 
