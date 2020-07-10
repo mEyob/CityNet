@@ -17,10 +17,10 @@ This repo provides a data pipeline for streaming sensor data from the Array of T
 
 Informative visualizations are made by querying the database. Because of its seamless integration with Timescaledb and its support for time series visualization, [Grafana](https://grafana.com/) is used to create the visualizations. Grafana also has builtin support for setting a threshold and for sending notification alerts when the threshold is breached, which is a useful functionality for sensor readings.  
 
-A web-based sensor data outlier detection module is also provided.
+A web-based sensor data outlier detection module is also provided that provides the number of outlier sensor readings given a duration of interest.
 
-Please click this image for a short demo of the visualization dashboard.
-[![Demo](img/demo-screenshot.png)](https://youtu.be/fZgwQc67qnk "Demo")
+Please click this image for a short video of the dashboard or go to [datapipe.tech](http://datapipe.tech:8080).
+[![Demo](img/demo-screenshot.png)](https://youtu.be/5t4jXCEdWEk "Demo")
 
 ## Data pipeline 
 
